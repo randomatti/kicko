@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kick İzleyici Artırıcı Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Kick İzleyici Artırıcı Pro</h2>
+        
+        <div class="input-group">
+            <label for="username">Kanal Kullanıcı Adı:</label>
+            <input type="text" id="username" placeholder="Örnek: hasquake">
+        </div>
+        
+        <div class="input-group">
+            <label for="target">Hedef İzleyici Sayısı:</label>
+            <input type="number" id="target" min="1" placeholder="Örnek: 100">
+        </div>
+
+        <div class="input-group">
+            <label for="delay">Pencereler Arası Gecikme (ms):</label>
+            <input type="number" id="delay" min="100" value="500">
+        </div>
+
+        <div class="input-group">
+            <label for="windowSize">Pencere Boyutu:</label>
+            <select id="windowSize">
+                <option value="minimal">Minimal (240x180)</option>
+                <option value="small">Küçük (320x240)</option>
+                <option value="medium" selected>Orta (480x360)</option>
+                <option value="large">Büyük (640x480)</option>
+            </select>
+        </div>
+
+        <button onclick="startViewer()" id="startButton">Başlat</button>
+
+        <div id="status"></div>
+        <div class="progress-bar">
+            <div class="progress" id="progressBar"></div>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let windows = [];
+        
+        function getWindowSize() {
+            const size = document.getElementById('windowSize').value;
+            switch(size) {
+                case 'minimal': return {width: 240, height: 180};
+                case 'small': return {width: 320, height: 240};
+                case 'medium': return {width: 480, height: 360};
+                case 'large': return {width: 640, height: 480};
+                default: return {width: 480, height: 360};
+            }
+        }
+
+        function getRandomPosition() {
+            const screenWidth = window.screen.availWidth;
+            const screenHeight = window.screen.availHeight;
+            const size = getWindowSize();
+            
+            return {
+                left: Math.floor(Math.random() * (screenWidth - size.width)),
+                top: Math.floor(Math.random() * (screenHeight - size.height))
+            };
+        }
+
+        function startViewer() {
+            if (isRunning) {
+                stopViewer();
+                return;
+            }
+
+            const username = document.getElementById('username').value;
+            const target = parseInt(document.getElementById('target').value);
+            const delay = parseInt(document.getElementById('delay').value);
+
+            if (!username || !target || target < 1) {
+                alert('Lütfen geçerli bir kullanıcı adı ve hedef izleyici sayısı girin!');
+                return;
+            }
+
+            isRunning = true;
+            document.getElementById('startButton').textContent = 'Durdur';
+            document.getElementById('startButton').style.backgroundColor = '#f44336';
+
+            let opened = 0;
+            const statusDiv = document.getElementById('status');
+            const size = getWindowSize();
+
+            const timer = setInterval(() => {
+                if (!isRunning || opened >= target) {
+                    clearInterval(timer);
+                    return;
+                }
+
+                const pos = getRandomPosition();
+                const windowFeatures = `width=${size.width},height=${size.height},left=${pos.left},top=${pos.top}`;
+                const win = window.open(`https://kick.com/${username}`, `_blank${opened}`, windowFeatures);
+
+                if (win) {
+                    windows.push(win);
+                    opened++;
+
+                    const progress = (opened / target) * 100;
+                    document.getElementById('progressBar').style.width = `${progress}%`;
+                    
+                    statusDiv.innerHTML = `Aktif pencere sayısı: ${opened}`;
+                    statusDiv.style.backgroundColor = '#e8f5e9';
+                    statusDiv.style.color = '#2e7d32';
+                } else {
+                    statusDiv.innerHTML = 'Pop-up engelleyici aktif olabilir. Lütfen izin verin!';
+                    statusDiv.style.backgroundColor = '#ffebee';
+                    statusDiv.style.color = '#c62828';
+                    clearInterval(timer);
+                }
+
+            }, delay);
+        }
+
+        function stopViewer() {
+            isRunning = false;
+            windows.forEach(win => {
+                if (!win.closed) {
+                    win.close();
+                }
+            });
+            windows = [];
+            document.getElementById('startButton').textContent = 'Başlat';
+            document.getElementById('startButton').style.backgroundColor = '#4CAF50';
+            document.getElementById('status').innerHTML = 'Durduruldu';
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        // Sayfa kapatıldığında tüm pencereleri kapat
+        window.onbeforeunload = function() {
+            stopViewer();
+        };
+    </script>
+</body>
+</html>
